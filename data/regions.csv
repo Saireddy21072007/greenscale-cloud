@@ -1,0 +1,10 @@
+region_id,provider,site,country,residency_zone,utc_offset,grid_gco2_kwh,pue,renewable_share,usd_per_vcpu_hour,latency_ms,capacity_vcpu
+ap-south-1,AWS,Mumbai,India,IN,5.5,632,1.20,0.22,0.0464,28,512
+centralindia,Azure,Pune,India,IN,5.5,628,1.18,0.24,0.0472,32,384
+asia-south1,GCP,Mumbai,India,IN,5.5,632,1.10,0.26,0.0475,30,384
+eu-north-1,AWS,Stockholm,Sweden,EU,2.0,41,1.15,0.68,0.0448,145,512
+europe-west4,GCP,Eemshaven,Netherlands,EU,2.0,268,1.10,0.47,0.0428,138,448
+us-central1,GCP,Council Bluffs,USA,US,-5.0,385,1.10,0.38,0.0392,235,640
+us-east-1,AWS,N Virginia,USA,US,-4.0,342,1.14,0.31,0.0368,215,768
+us-west-2,AWS,Oregon,USA,US,-7.0,118,1.14,0.61,0.0432,245,640
+southamerica-east1,GCP,Sao Paulo,Brazil,SA,-3.0,98,1.12,0.83,0.0612,320,256
