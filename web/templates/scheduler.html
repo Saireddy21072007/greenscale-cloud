@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}Schedule a job &middot; GreenScale Cloud 2.0{% endblock %}
+
+{% block content %}
+<h1>Schedule a job</h1>
+<p class="lede">
+  Submit one job and watch the scheduler score every (region, start-hour) pair, pick a
+  winner, and write the decision to the chain. The runtime predictor currently in use is
+  <span class="pill {{ 'ok' if predictor_source == 'model' else 'wait' }}">{{ predictor_source }}</span>
+  {% if predictor_source == 'heuristic' %}
+  &mdash; run <code>python scripts/train_model.py</code> to switch to the learned model.
+  {% endif %}
+</p>
+
+<div class="grid cols-2">
+  <div class="panel">
+    <h3>Job specification</h3>
+    <form id="job-form">
+      <div class="row-2">
+        <div>
+          <label for="tenant">Tenant</label>
+          <input id="tenant" name="tenant" value="medi-clinic">
+        </div>
+        <div>
+          <label for="task_type">Workload class</label>
+          <select id="task_type" name="task_type">
+            {% for t in task_types %}
+            <option value="{{ t }}" {{ 'selected' if t == 'ml_train' }}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div><label for="vcpus">vCPUs</label>
+          <input id="vcpus" name="vcpus" type="number" min="1" max="64" value="8"></div>
+        <div><label for="memory_gb">Memory (GB)</label>
+          <input id="memory_gb" name="memory_gb" type="number" min="1" step="0.5" value="32"></div>
+      </div>
+
+      <div class="row-2">
+        <div><label for="input_size_gb">Input data (GB)</label>
+          <input id="input_size_gb" name="input_size_gb" type="number" min="0.5" step="0.5" value="40"></div>
+        <div><label for="submitted_hour">Submitted at (UTC hour)</label>
+          <input id="submitted_hour" name="submitted_hour" type="number" min="0" max="23" value="14"></div>
+      </div>
+
+      <div class="row-2">
+        <div><label for="max_deferral_hours">Delay tolerance (h)</label>
+          <input id="max_deferral_hours" name="max_deferral_hours" type="number" min="0" max="12" value="12"></div>
+        <div><label for="latency_budget_ms">Latency budget (ms)</label>
+          <input id="latency_budget_ms" name="latency_budget_ms" type="number" min="10" value="400"></div>
+      </div>
+
+      <div class="row-2">
+        <div>
+          <label for="residency_zone">Data residency</label>
+          <select id="residency_zone" name="residency_zone">
+            <option value="">No restriction</option>
+            <option value="IN">India only</option>
+            <option value="EU">EU only</option>
+            <option value="US">US only</option>
+            <option value="SA">South America only</option>
+          </select>
+        </div>
+        <div>
+          <label for="priority">Priority</label>
+          <select id="priority" name="priority">
+            <option value="normal">normal</option>
+            <option value="high">high (never deferred)</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="policy">Policy</label>
+      <select id="policy" name="policy">
+        {% for p in policies %}
+        <option value="{{ p }}">{{ p }}</option>
+        {% endfor %}
+      </select>
+      <p class="note" id="policy-note">{{ policy_notes['greenscale'] }}</p>
+
+      <button type="submit" id="submit-btn">Schedule and record on chain</button>
+    </form>
+  </div>
+
+  <div class="panel">
+    <h3>Objective weights</h3>
+    <p class="note" style="margin-top:0">
+      The four objectives from our abstract. Move a slider and re-submit to see the
+      decision change &mdash; this is how we generated the sensitivity table in the report.
+      Values are renormalised to sum to 1 before scoring.
+    </p>
+    {% for name, value in weights.items() %}
+    <label for="w-{{ name }}">{{ name }} <span id="w-{{ name }}-val" class="muted">{{ value }}</span></label>
+    <input type="range" id="w-{{ name }}" class="weight" data-name="{{ name }}"
+           min="0" max="1" step="0.05" value="{{ value }}">
+    {% endfor %}
+
+    <h3 style="margin-top:24px">Live migration check</h3>
+    <p class="note" style="margin-top:0">
+      Ask whether a job already running in one region should move now, given the current
+      hour. The answer accounts for the carbon cost of the migration itself.
+    </p>
+    <div class="row-2">
+      <div>
+        <label for="mig-region">Currently running in</label>
+        <select id="mig-region">
+          {% for r in regions %}
+          <option value="{{ r.region_id }}" {{ 'selected' if r.region_id == 'europe-west4' }}>{{ r.region_id }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div>
+        <label for="mig-hour">Current UTC hour</label>
+        <input id="mig-hour" type="number" min="0" max="23" value="19">
+      </div>
+    </div>
+    <button class="ghost" id="mig-btn">Evaluate migration</button>
+    <div id="mig-result"></div>
+  </div>
+</div>
+
+<div id="result"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  GS.POLICY_NOTES = {{ policy_notes | tojson }};
+  GS.wireSchedulerForm();
+  GS.wireMigration();
+</script>
+{% endblock %}

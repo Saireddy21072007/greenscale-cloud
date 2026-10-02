@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Policy comparison &middot; GreenScale Cloud 2.0{% endblock %}
+
+{% block content %}
+<h1>Policy comparison</h1>
+<p class="lede">
+  The same generated trace is run through every policy with capacity counters reset in
+  between, so the only variable is the placement rule. Savings are quoted against
+  <strong>home_region</strong> &mdash; nearest region, immediate start &mdash; because that
+  is what a small business gets today if nobody schedules for them.
+</p>
+
+<div class="panel">
+  <div class="row-2">
+    <div><label for="n">Trace size (jobs)</label>
+      <input id="n" type="number" min="50" max="2000" step="50" value="400"></div>
+    <div><label for="seed">Random seed</label>
+      <input id="seed" type="number" value="42"></div>
+  </div>
+  <button id="run-btn">Run comparison</button>
+  <span id="status" class="muted" style="margin-left:10px"></span>
+</div>
+
+<div id="out"></div>
+{% endblock %}
+
+{% block scripts %}
+<script>GS.wireCompare();</script>
+{% endblock %}

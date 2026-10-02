@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Ledger &middot; GreenScale Cloud 2.0{% endblock %}
+
+{% block content %}
+<h1>Blockchain ledger</h1>
+<p class="lede">
+  Every allocation, migration, carbon saving and SLA check is an ECDSA-signed transaction
+  sealed into a proof-of-work block. Difficulty is {{ difficulty }} leading zeros. Signing
+  node{{ 's' if node_ids | length > 1 }}: {{ node_ids | join(', ') or 'none' }}.
+</p>
+
+<div class="banner {{ 'ok' if validation.valid else 'no' }}">
+  {% if validation.valid %}
+    <strong>Chain valid.</strong>
+    {{ validation.checked_blocks }} blocks and {{ validation.checked_transactions }}
+    transactions passed hash, Merkle-root, proof-of-work, linkage and signature checks.
+  {% else %}
+    <strong>Chain INVALID.</strong>
+    <ul>{% for p in validation.problems %}<li>{{ p }}</li>{% endfor %}</ul>
+  {% endif %}
+</div>
+
+<div class="panel">
+  <div class="spread">
+    <div>
+      <h3 style="margin-bottom:4px">Tamper-evidence test</h3>
+      <p class="note" style="margin-top:0">
+        Forges the <code>carbon_kg</code> field of the first allocation record on an
+        in-memory copy of the chain, then re-validates. The stored ledger is never
+        touched. This is the demonstration we run in the review.
+      </p>
+    </div>
+    <button class="ghost" id="tamper-btn" style="margin-top:0">Run tamper test</button>
+  </div>
+  <div id="tamper-out"></div>
+</div>
+
+<h2>Blocks ({{ blocks | length }})</h2>
+{% for b in blocks %}
+<details class="block-card" {{ 'open' if loop.index0 == 0 }}>
+  <summary>
+    <strong>#{{ b.index }}</strong>
+    <span class="pill info">{{ b.transactions | length }} tx</span>
+    <span class="muted">nonce {{ b.nonce }}</span>
+    <code class="hash">{{ b.hash[:32] }}&hellip;</code>
+  </summary>
+  <div class="body">
+    <table>
+      <tr><th>Hash</th><td><code class="hash">{{ b.hash }}</code></td></tr>
+      <tr><th>Previous</th><td><code class="hash">{{ b.previous_hash }}</code></td></tr>
+      <tr><th>Merkle root</th><td><code class="hash">{{ b.merkle_root }}</code></td></tr>
+    </table>
+    <h3 style="margin-top:14px">Transactions</h3>
+    {% for tx in b.transactions %}
+    <div style="margin-bottom:10px">
+      <span class="pill {{ 'no' if tx.type == 'SLA_VIOLATION' else ('ok' if tx.type in ['CARBON_SAVING','SLA_COMPLIANCE'] else 'info') }}">{{ tx.type }}</span>
+      <code class="muted">{{ tx.tx_id }}</code>
+      {% if tx.signature %}<span class="muted">&middot; signed by {{ tx.signer }}</span>{% endif %}
+      <pre class="block" style="margin-top:6px">{{ tx.payload | tojson(indent=2) }}</pre>
+    </div>
+    {% endfor %}
+  </div>
+</details>
+{% endfor %}
+{% endblock %}
+
+{% block scripts %}
+<script>GS.wireTamper();</script>
+{% endblock %}

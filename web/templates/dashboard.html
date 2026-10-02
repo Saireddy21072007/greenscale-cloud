@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Dashboard &middot; GreenScale Cloud 2.0{% endblock %}
+
+{% block content %}
+<h1>Sustainability dashboard</h1>
+<p class="lede">
+  Every figure below is recomputed by replaying the blockchain ledger. There is no
+  separate database holding these totals, which is the point: if a number here is
+  wrong, the chain says so and validation fails.
+</p>
+
+{% if summary.tasks_scheduled == 0 %}
+<div class="banner ok">
+  The ledger is empty. Run a trace to populate it:
+  <button class="ghost" id="seed-btn" style="margin-left:8px;margin-top:0">Simulate 100 jobs</button>
+  <span id="seed-status" class="muted"></span>
+</div>
+{% endif %}
+
+<div class="grid cols-4">
+  <div class="panel kpi">
+    <div class="label">Jobs scheduled</div>
+    <div class="value">{{ summary.tasks_scheduled }}</div>
+    <div class="foot">{{ summary.chain_height }} blocks &middot; {{ summary.pending_transactions }} pending</div>
+  </div>
+  <div class="panel kpi">
+    <div class="label">CO&#8322; avoided</div>
+    <div class="value good">{{ summary.carbon_saved_kg }}<span class="unit"> kg</span></div>
+    <div class="foot">{{ summary.carbon_saved_pct }}% below the home-region baseline</div>
+  </div>
+  <div class="panel kpi">
+    <div class="label">Energy drawn</div>
+    <div class="value">{{ summary.total_energy_kwh }}<span class="unit"> kWh</span></div>
+    <div class="foot">{{ summary.total_carbon_kg }} kg CO&#8322; actually emitted</div>
+  </div>
+  <div class="panel kpi">
+    <div class="label">SLA compliance</div>
+    <div class="value {{ 'good' if summary.sla_compliance_pct >= 99 else 'warn' }}">
+      {{ summary.sla_compliance_pct }}<span class="unit">%</span>
+    </div>
+    <div class="foot">{{ summary.sla_violations }} violation(s) in {{ summary.sla_checks }} checks</div>
+  </div>
+</div>
+
+<div class="grid cols-4" style="margin-top:16px">
+  <div class="panel kpi">
+    <div class="label">Cloud spend</div>
+    <div class="value">${{ summary.total_cost_usd }}</div>
+    <div class="foot">
+      {% if summary.cost_delta_usd <= 0 %}
+        <span class="good">${{ (-summary.cost_delta_usd) | round(2) }} cheaper</span> than the baseline
+      {% else %}
+        <span class="warn">${{ summary.cost_delta_usd | round(2) }} green premium</span>
+      {% endif %}
+    </div>
+  </div>
+  <div class="panel kpi">
+    <div class="label">Total deferral</div>
+    <div class="value">{{ summary.hours_deferred }}<span class="unit"> h</span></div>
+    <div class="foot">waiting for cleaner grid hours</div>
+  </div>
+  <div class="panel kpi">
+    <div class="label">Live migrations</div>
+    <div class="value">{{ summary.migrations }}</div>
+    <div class="foot">recorded on chain with net saving</div>
+  </div>
+  <div class="panel kpi">
+    <div class="label">Equivalent to</div>
+    <div class="value good">{{ summary.equivalent_trees_year }}</div>
+    <div class="foot">trees absorbing CO&#8322; for a year</div>
+  </div>
+</div>
+
+<div class="grid cols-2" style="margin-top:24px">
+  <div class="panel">
+    <h3>Grid carbon intensity over 24 h (UTC)</h3>
+    <div class="chart-box"><canvas id="curveChart"></canvas></div>
+    <p class="note">
+      This is the whole basis of the project. Mumbai never drops below roughly
+      500&nbsp;gCO&#8322;/kWh; Stockholm never rises above about 45. Eemshaven swings by
+      a factor of two within a single day, which is what makes deferral worthwhile there.
+    </p>
+  </div>
+  <div class="panel">
+    <h3>Where the jobs landed</h3>
+    <div class="chart-box"><canvas id="regionChart"></canvas></div>
+    <p class="note">
+      Latency-bound and residency-locked jobs stay in India by construction &mdash;
+      those constraints are hard filters, not weighted terms.
+    </p>
+  </div>
+</div>
+
+<h2>Region catalogue</h2>
+<div class="panel table-scroll">
+  <table>
+    <thead>
+      <tr>
+        <th>Region</th><th>Provider</th><th>Zone</th>
+        <th class="num">Grid gCO&#8322;/kWh</th><th class="num">PUE</th>
+        <th class="num">Renewable</th><th class="num">$/vCPU-h</th>
+        <th class="num">Latency</th><th class="num">Capacity</th>
+        <th class="num">Jobs</th><th class="num">CO&#8322; kg</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in regions %}
+      {% set s = summary.by_region.get(r.region_id) %}
+      <tr>
+        <td><strong>{{ r.region_id }}</strong><br><span class="muted">{{ r.site }}, {{ r.country }}</span></td>
+        <td>{{ r.provider }}</td>
+        <td><span class="pill info">{{ r.residency_zone }}</span></td>
+        <td class="num {{ 'bad' if r.grid_gco2_kwh > 400 else ('good' if r.grid_gco2_kwh < 150 else 'warn') }}">
+          {{ r.grid_gco2_kwh | round(0) | int }}
+        </td>
+        <td class="num">{{ r.pue }}</td>
+        <td class="num">{{ (r.renewable_share * 100) | round(0) | int }}%</td>
+        <td class="num">{{ '%.4f' % r.usd_per_vcpu_hour }}</td>
+        <td class="num">{{ r.latency_ms | round(0) | int }} ms</td>
+        <td class="num">{{ r.capacity_vcpu }}</td>
+        <td class="num">{{ s.tasks | int if s else 0 }}</td>
+        <td class="num">{{ s.carbon_kg if s else '&mdash;' | safe }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<h2>Per-tenant accounting</h2>
+<div class="panel table-scroll">
+  {% if summary.by_tenant %}
+  <table>
+    <thead>
+      <tr><th>Tenant</th><th class="num">Jobs</th><th class="num">CO&#8322; emitted (kg)</th>
+          <th class="num">CO&#8322; avoided (kg)</th><th class="num">Spend (USD)</th></tr>
+    </thead>
+    <tbody>
+      {% for tenant, s in summary.by_tenant.items() %}
+      <tr>
+        <td>{{ tenant }}</td>
+        <td class="num">{{ s.tasks | int }}</td>
+        <td class="num">{{ s.carbon_kg }}</td>
+        <td class="num good">{{ s.saved_kg }}</td>
+        <td class="num">${{ s.cost_usd }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="note">
+    Each row is derived only from signed ledger entries, so a tenant can verify their
+    own sustainability report without trusting us. That is the audit story from our abstract.
+  </p>
+  {% else %}
+  <p class="muted">No tenant activity yet.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  GS.drawCarbonCurves("curveChart");
+  GS.drawRegionMix("regionChart", {{ summary.by_region | tojson }});
+  GS.wireSeedButton("seed-btn", "seed-status");
+</script>
+{% endblock %}
