@@ -1,0 +1,13 @@
+# Runtime
+Flask==3.1.3
+scikit-learn==1.9.0
+numpy==2.2.6
+joblib==1.5.3
+cryptography==49.0.0
+
+# WSGI server for deployment (Linux/macOS). On Windows use waitress instead.
+gunicorn==23.0.0; sys_platform != "win32"
+waitress==3.0.2; sys_platform == "win32"
+
+# Development / tests
+pytest==9.1.1
