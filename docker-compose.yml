@@ -1,0 +1,20 @@
+services:
+  greenscale:
+    build: .
+    image: greenscale-cloud:2.0
+    ports:
+      - "5000:5000"
+    environment:
+      # Change this before exposing the app to anything public.
+      GS_SECRET_KEY: "change-me-in-production"
+      # Proof-of-work difficulty. 3 is instant; 5 makes mining visible.
+      GS_POW_DIFFICULTY: "3"
+    volumes:
+      # Named volume, not a bind mount: the ledger and the signing key must
+      # outlive the container, and a bind mount on Windows breaks file
+      # permissions on the private key.
+      - greenscale-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  greenscale-data:
