@@ -172,8 +172,7 @@ Stated up front rather than left to be discovered.
 - **Sai Vandith** — Flask API and the four dashboard pages, charts, region and carbon
   datasets, Docker and deployment configuration.
 
-Tests were written by whoever owned the module. All four of us reviewed the final
-result tables together before the numbers went into the slides.
+
 
 ## Tech stack
 
