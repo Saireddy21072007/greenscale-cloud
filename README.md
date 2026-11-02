@@ -4,7 +4,8 @@
 ![python](https://img.shields.io/badge/python-3.11%2B-blue)
 ![flask](https://img.shields.io/badge/Flask-3.1-lightgrey)
 
-
+**AI-driven carbon-aware multi-cloud resource scheduling with blockchain-based secure
+resource allocation.**
 
 Cloud Computing mini-project — B.Tech CSE (Artificial Intelligence),
 Amrita Vishwa Vidyapeetham, Coimbatore.
