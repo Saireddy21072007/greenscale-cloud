@@ -160,7 +160,7 @@ Stated up front rather than left to be discovered.
   pretending to have.
 - **Region prices and latencies are representative figures**, not live billing data.
 
-## What each of us did
+
 
 - **Sai Reddy A.** — scheduler core: candidate generation, min-max normalisation,
   weighted scoring, constraint filtering, the five policies. Experiment harness.
