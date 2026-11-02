@@ -16,7 +16,12 @@ Team of four: **Sai Reddy A.** (scheduler core + experiment harness), Rohit Vard
 
 ## What this is
 
-
+Our base paper is Biswas, Jahan, Saha and Samsuddoha, *"A succinct state-of-the-art
+survey on green cloud computing: challenges, strategies, and future directions"*
+(Sustainable Computing: Informatics and Systems 44, 2024, 101036). It surveys how the
+field reduces energy and carbon in cloud data centres, and it is very good at that —
+but every framework it catalogues shares one blind spot. **None of them records *why* a
+placement decision was made in a way anyone else can check.**
 
 That matters the moment sustainability stops being a slide and starts being a claim. If
 a hospital tells its regulator "we cut our cloud emissions by 60% this year", the number
