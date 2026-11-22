@@ -1,4 +1,4 @@
-"""Energy, carbon, cost and latency estimation for a (task, region, hour) triple.
+
 
 Everything the scheduler scores comes out of this one module, so if a reviewer
 disagrees with the physics they only have to argue with this file.
