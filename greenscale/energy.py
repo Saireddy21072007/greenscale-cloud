@@ -1,7 +1,6 @@
 """Energy, carbon, cost and latency estimation for a (task, region, hour) triple.
 
-Everything the scheduler scores comes out of this one module, so if a reviewer
-disagrees with the physics they only have to argue with this file.
+
 
 Model
 -----
@@ -81,4 +80,28 @@ def average_intensity(
     return total / span
 
 
-
+def estimate(
+    task: Task,
+    region: Region,
+    carbon: CarbonModel,
+    start_hour: int,
+    runtime_hours: float,
+    utilisation: float,
+) -> Estimate:
+    power = it_power_watts(task, utilisation)
+    energy_kwh = power * region.pue * runtime_hours / 1000.0
+    intensity = average_intensity(carbon, region.region_id, start_hour, runtime_hours)
+    carbon_kg = energy_kwh * intensity / 1000.0
+    cost = task.vcpus * region.usd_per_vcpu_hour * runtime_hours
+    return Estimate(
+        region_id=region.region_id,
+        start_hour=start_hour,
+        runtime_hours=runtime_hours,
+        utilisation=utilisation,
+        it_power_w=power,
+        energy_kwh=energy_kwh,
+        carbon_intensity=intensity,
+        carbon_kg=carbon_kg,
+        cost_usd=cost,
+        latency_ms=region.latency_ms,
+    )
